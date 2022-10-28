@@ -1,3 +1,3 @@
-# Repository setup required :wave:
-      
-Please visit the website URL :point_right: for this repository to complete the setup of this repository and configure access controls.
+# Azure MLOps (v2) solution accelerator
+
+[Main README file](https://github.com/Azure/mlops-v2/blob/main/README.md)
