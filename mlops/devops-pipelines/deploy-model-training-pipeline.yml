@@ -18,14 +18,12 @@ trigger:
 pool:
   vmImage: ubuntu-20.04
 
-
 resources:
   repositories:
-    - repository: mlops-templates  # Template Repo
-      name: Azure/mlops-templates # need to change org name from "Azure" to your own org
-      endpoint: github-connection # need to set up and hardcode
-      type: github
-      ref: main
+    - repository: mlops-templates 
+      name: mlops-templates 
+      type: git
+      ref: main #branch name
 
 stages:
 - stage: DeployTrainingPipeline
