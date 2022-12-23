@@ -1,0 +1,56 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+parameters:
+  - name: pipeline_file
+    type: string
+  - name: experiment_name
+    type: string
+  - name: display_name
+    type: string
+  - name: registry_name
+    type: string
+    default: 'RegMLopsLitev1'
+
+
+steps:
+  - task: AzureCLI@2
+    displayName: Run Azure ML pipeline
+    continueOnError: true
+    inputs: 
+      azureSubscription: $(ado_service_connection_rg) #needs to have access at the RG level 
+      scriptType: bash
+      workingDirectory: $(System.DefaultWorkingDirectory)
+      scriptLocation: inlineScript
+      inlineScript: |
+        run_id=$(az ml job create -f ${{ parameters.pipeline_file }} \
+            --set experiment_name=${{ parameters.experiment_name }} \
+                  inputs.subscriptionId=$(subscription_id) \
+                  inputs.rg_group=$(resource_group) \
+                  inputs.workspace=$(aml_workspace) \
+                  display_name=${{ parameters.display_name }} --query name -o tsv)
+
+        if [[ -z "$run_id" ]]
+        then
+          echo "Job creation failed"
+          exit 3
+        fi
+        az ml job show -n $run_id --web
+        status=$(az ml job show -n $run_id --query status -o tsv)
+        if [[ -z "$status" ]]
+        then
+          echo "Status query failed"
+          exit 4
+        fi
+        running=("NotStarted" "Queued" "Starting" "Preparing" "Running" "Finalizing" "CancelRequested")
+        while [[ ${running[*]} =~ $status ]]
+        do
+          sleep 15 
+          status=$(az ml job show -n $run_id --query status -o tsv)
+          echo $status
+        done
+        if [[ "$status" != "Completed" ]]  
+        then
+          echo "Training Job failed or canceled"
+          exit 3
+        fi
