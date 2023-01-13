@@ -87,7 +87,7 @@ stages:
           size: $(training_target_sku)
           min_instances: ${{ variables.training_target_min_nodes }}
           max_instances: ${{ variables.training_target_max_nodes }}
-          cluster_tier: $(cluster_tier)
+          cluster_tier: $(training_target_tier)
 
 
         # Run the ML Pipeline
