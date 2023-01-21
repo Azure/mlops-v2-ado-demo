@@ -21,13 +21,15 @@ trigger:
 pool:
   vmImage: ubuntu-20.04
 
+
 resources:
   repositories:
-    - repository: mlops-templates  # Template Repo
+    - repository: mlops-templates 
       name: mlops-templates 
       type: git
-      ref: main
+      ref: main #branch name
       
+
 stages:
 - stage: CreateBatchEndpoint
   displayName: Create/Update Batch Endpoint 
