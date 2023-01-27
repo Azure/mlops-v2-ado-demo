@@ -26,7 +26,6 @@ trigger:
 pool:
   vmImage: ubuntu-20.04
 
-
 stages:
 - stage: CreateOnlineEndpoint
   displayName: Create/Update Online Endpoint
