@@ -1,0 +1,47 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+parameters:
+  - name: rg_name
+    type: string
+    default: $(resource_group)
+  - name: workspace_name
+    type: string
+    default: $(aml_workspace)
+  - name: location
+    type: string
+    default: $(location)
+
+
+
+steps:
+
+  - task: AzureCLI@2
+    displayName: 'Create Workspace'
+    inputs:
+      azureSubscription: '$(ado_service_connection_rg)'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+
+        echo "Checking workspace" ${{ parameters.rg_name }} ${{ parameters.rg_name }} ${{ parameters.location }} 
+
+        # Create workspace
+        wkspcs=$(az ml workspace list -g  ${{ parameters.rg_name }} --query [].display_name -o tsv )
+        ws_exists="false"
+
+        echo "found workspaces" $wkspcs
+
+        for ws in $wkspcs
+        do
+            if [[ ${{ parameters.workspace_name }} = $(echo $ws | tr -d '\r') ]]; then
+                ws_exists="true"
+                echo "Workspace ${{ parameters.workspace_name }} already exists"
+                break
+            fi
+        done
+
+        if [[ $ws_exists = "false" ]]; then
+            echo "Creating Workspace ${{ parameters.workspace_name }} ${{ parameters.rg_name }} ${{ parameters.location }} now .."
+            az ml workspace create --name ${{ parameters.workspace_name }} -g ${{ parameters.rg_name }} -l ${{ parameters.location }}
+        fi

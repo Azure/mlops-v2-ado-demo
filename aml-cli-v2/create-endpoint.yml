@@ -1,0 +1,25 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+parameters: 
+- name: endpoint_file
+  type: string
+
+steps:
+  - task: AzureCLI@2
+    displayName: Create online/batch endpoint 
+    continueOnError: true
+    inputs: 
+      azureSubscription: $(ado_service_connection_rg) #needs to have access at the RG level 
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        ENDPOINT_EXISTS=$(az ml $(endpoint_type)-endpoint list -o tsv --query "[?name=='$(endpoint_name)'][name]" | wc -l)
+        echo $ENDPOINT_NAME $ENDPOINT_EXISTS
+        az ml $(endpoint_type)-endpoint list -o tsv
+
+        if [[ ENDPOINT_EXISTS -ne 1 ]]; then
+            az ml $(endpoint_type)-endpoint create --name $(endpoint_name) -f ${{ parameters.endpoint_file }}
+        else
+            echo "Endpoint exists"
+        fi

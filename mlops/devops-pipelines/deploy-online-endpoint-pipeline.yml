@@ -26,17 +26,6 @@ trigger:
 pool:
   vmImage: ubuntu-20.04
 
-<<<<<<< HEAD
-
-resources:
-  repositories:
-    - repository: mlops-templates 
-      name: mlops-templates 
-      type: git
-      ref: main #branch name
-=======
->>>>>>> feature/samer-clean
-
 stages:
 - stage: CreateOnlineEndpoint
   displayName: Create/Update Online Endpoint

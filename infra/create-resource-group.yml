@@ -1,0 +1,21 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+parameters:
+- name: rg_name
+  type: string
+  default: $(resource_group)
+- name: location
+  type: string
+  default: $(location)
+
+
+
+steps:
+  - task: AzureCLI@2
+    displayName: 'Create Resource Group'
+    inputs:
+      azureSubscription: '$(ado_service_connection_rg)'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: 'az group create --location ${{ parameters.location }} --name ${{ parameters.rg_name }}'
