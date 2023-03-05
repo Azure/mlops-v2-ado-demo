@@ -1,7 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
 name: blue
-endpoint_name: wine-quality-online
-model: azureml://registries/kdmlregistry/models/wine-model/versions/1
+endpoint_name: taxi-fare-online
+model: azureml:taxi-model@latest
 instance_type: Standard_DS2_v2
 instance_count: 1
-

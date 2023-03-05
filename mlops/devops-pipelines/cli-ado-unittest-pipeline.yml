@@ -1,0 +1,25 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+
+trigger:
+  paths:
+    include:
+    - data-science/*
+
+pool:
+  vmImage: ubuntu-20.04
+
+
+stages :
+  - stage: UnitTest
+    displayName: Run Unit Test
+    jobs:
+    - job: RunUnitTest
+      displayName: Run unit tests
+      steps:
+      - checkout: self
+        path: s/
+      - template: /aml-cli-v2/tests/unit-tests.yml
+
+

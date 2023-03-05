@@ -1,0 +1,115 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+variables:
+- template: ../../config-infra-prod.yml
+
+# This sets up the optional triggers for the running the pipeline.
+# Note: This pipeline is triggered by a manual trigger.
+#       This is to avoid running the pipeline when the pipeline is updated.
+#
+#       See the documentation for more information.
+#       https://learn.microsoft.com/en-us/azure/devops/pipelines/build/triggers?view=azure-devops
+trigger:
+- none
+
+# This the image that is used to run the pipeline
+# Note: This is the image that is used to run the pipeline.
+#       The image is a Ubuntu 20.04 image.
+#
+#       See the documentation for more information.
+#       https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml
+pool:
+  vmImage: ubuntu-20.04
+
+
+stages:
+- stage: RunTrainingPipeline
+  displayName: Run Training Pipeline
+
+  jobs:
+    - job: DeployDevTrainingPipeline
+      timeoutInMinutes: 120 # how long to run the job before automatically cancelling
+      steps:
+      - checkout: self
+        path: s/
+
+        # Install the Azure CLI
+        # Note: All pipelines need the ML extension to the Azure CLI. We start with installing the AZ CLI.
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+      - template: /aml-cli-v2/install-az-cli.yml
+
+        # Install the Azure ML CLI
+        # Note: The step uses Azure CLI to install the Azure ML CLI.
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/azure/machine-learning/how-to-configure-cli?tabs=public
+      - template: /aml-cli-v2/install-aml-cli.yml
+
+        # Connect to the Azure ML workspace
+        # Note: The step configures the default workspace and resourcse group for the Azure ML CLI.
+        #       Rather than pass the workspace name and resource group name to each command,
+        #       the workspace is set as the default workspace.
+        #       The step uses Azure ML CLI to connect to the workspace.
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-v2?tabs=cli#connect-to-the-workspace
+      - template: /mlops/azureml/connect/connect-to-workspace.yml
+
+        # Register the environment
+        # Note: The register environment step checks if the environment exists or not.
+        #       If it does not exist, it registers it. If it does exist, it skips the registration.
+        #       This is to avoid errors when the environment already exists.
+        #       The step uses Azure ML CLI to register the environment.
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-v2?tabs=cli#create-an-environment-from-a-conda-specification
+      - template: /aml-cli-v2/register-environment.yml
+        parameters:
+          build_type: conda
+          environment_name: taxi-train-env
+          environment_file: mlops/azureml/train/train-env.yml
+
+        # Create the compute target.
+        # Note: This is a compute resource for training the model.
+        #       The create compute steps checks if the compute exists or not.
+        #       This is to avoid errors when the compute does not already exists.
+        #       If it does not exist, it creates it. If it does exist, it skips the creation.
+        #       The step uses Azure ML CLI to create the compute target.
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/azure/machine-learning/how-to-train-model?tabs=azurecli#2-create-a-compute-resource-for-training
+      - template: /aml-cli-v2/create-compute.yml
+        parameters:
+          cluster_name: $(training_target)
+          size: $(training_target_sku)
+          min_instances: ${{ variables.training_target_min_nodes }}
+          max_instances: ${{ variables.training_target_max_nodes }}
+          cluster_tier: $(training_target_tier)
+
+
+        # Run the ML Pipeline
+        # Note: This step uses Azure ML CLI to register the data in AML.
+      - template: /aml-cli-v2/register-data.yml
+        parameters:
+          data_type: uri_file
+          data_name: taxi-data
+          data_file: mlops/azureml/train/data.yml
+
+          
+        # Run the ML Pipeline
+        # Note: This step uses Azure ML CLI to run the pipeline.
+        #       The step also waits for the pipeline to complete after submitting the pipeline.
+        #       This may not be the best practice for production pipelines.
+        #       In production, you may want to run the pipeline and then continue with other steps.
+        #       The pipeline can be monitored and the pipeline can be stopped if needed from the ML Workspace
+        #
+        #       See the documentation for more information.
+        #       https://learn.microsoft.com/en-us/azure/machine-learning/how-to-train-model?tabs=azurecli#3-run-the-pipeline
+      - template: /aml-cli-v2/run-pipeline.yml
+        parameters:
+          pipeline_file: mlops/azureml/train/pipeline.yml
+          experiment_name: $(environment)_taxi_fare_train_$(Build.SourceBranchName)
+          display_name: $(environment)_taxi_fare_run_$(Build.BuildID)
